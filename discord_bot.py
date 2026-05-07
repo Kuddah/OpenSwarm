@@ -292,5 +292,5 @@ if __name__ == "__main__":
         )
     bot.run(DISCORD_BOT_TOKEN)
 
-        )
+        
     bot.run(DISCORD_BOT_TOKEN)
