@@ -8,8 +8,8 @@ from config import get_default_model, is_openai_provider
 
 def create_deep_research() -> Agent:
     return Agent(
-        name="Deep Research Agent",
-        description="Comprehensive deep research agent that conducts thorough research on any topic.",
+        name="Intelligence",
+        description="Comprehensive deep research that conducts thorough research on any topic.",
         instructions="./instructions.md",
         files_folder="./files",
         tools=[WebSearchTool(), ScholarSearch, IPythonInterpreter],

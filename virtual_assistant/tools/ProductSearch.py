@@ -80,45 +80,41 @@ class ProductSearch(BaseTool):
             if self.context and self.context.get("product_search_called", False):
                 return "Error: ProductSearch can only be called once per user request to save API costs. Use the results from the previous search or web search tool."
             
-            api_key = os.getenv("SEARCH_API_KEY")
+            api_key = os.getenv("SERPER_API_KEY")
             if not api_key:
-                raise ValueError("SEARCH_API_KEY is not set. Add it to your .env to use ProductSearch.")
+                raise ValueError("SERPER_API_KEY is not set. Add it to your .env to use ProductSearch.")
             
-            # Build request parameters
-            params = {
-                "engine": "google_shopping",
-                "api_key": api_key,
+            # Build request body (Serper uses POST + JSON)
+            payload: dict = {
                 "q": self.query,
                 "num": self.num_results,
-                "page": self.page
+                "page": self.page,
             }
             
-            # Add optional parameters
-            if self.location:
-                params["location"] = self.location
-            
             if self.country:
-                params["gl"] = self.country
+                payload["gl"] = self.country
             
             if self.language:
-                params["hl"] = self.language
+                payload["hl"] = self.language
             
-            if self.sort_by and self.sort_by != "relevance":
-                params["sort_by"] = self.sort_by
-            
+            # Serper shopping supports tbs for price filtering
+            tbs_parts = []
             if self.price_min is not None:
-                params["price_min"] = str(self.price_min)
-            
+                tbs_parts.append(f"ppr_min:{int(self.price_min)}")
             if self.price_max is not None:
-                params["price_max"] = str(self.price_max)
-            
-            if self.condition:
-                params["condition"] = self.condition
+                tbs_parts.append(f"ppr_max:{int(self.price_max)}")
+            if self.condition == "new":
+                tbs_parts.append("new:1")
+            elif self.condition == "used":
+                tbs_parts.append("used:1")
+            if tbs_parts:
+                payload["tbs"] = ",".join(tbs_parts)
             
             # Make API request
-            response = requests.get(
-                "https://www.searchapi.io/api/v1/search",
-                params=params,
+            response = requests.post(
+                "https://google.serper.dev/shopping",
+                headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+                json=payload,
                 timeout=30
             )
             
@@ -131,47 +127,21 @@ class ProductSearch(BaseTool):
             if "error" in data:
                 return f"Error from API: {data['error']}"
             
-            # Extract and format results
-            shopping_results = data.get("shopping_results", [])
-            shopping_ads = data.get("shopping_ads", [])
+            # Serper returns a single 'shopping' list
+            shopping_results = data.get("shopping", [])
             
-            # Combine results (ads first, then organic)
             all_products = []
-            
-            # Process shopping ads
-            for ad in shopping_ads[:5]:  # Limit ads to 5
-                all_products.append({
-                    "type": "sponsored",
-                    "title": ad.get("title"),
-                    "price": ad.get("price"),
-                    "extracted_price": ad.get("extracted_price"),
-                    "original_price": ad.get("original_price"),
-                    "seller": ad.get("seller"),
-                    "rating": ad.get("rating"),
-                    "reviews": ad.get("reviews"),
-                    "condition": ad.get("condition"),
-                    "delivery": ad.get("delivery"),
-                    "link": ad.get("link"),
-                    "image": ad.get("image")
-                })
-            
-            # Process organic shopping results
             for result in shopping_results:
                 all_products.append({
                     "type": "organic",
                     "title": result.get("title"),
                     "price": result.get("price"),
-                    "extracted_price": result.get("extracted_price"),
-                    "original_price": result.get("original_price"),
-                    "seller": result.get("seller"),
+                    "seller": result.get("source"),
                     "rating": result.get("rating"),
-                    "reviews": result.get("reviews"),
-                    "condition": result.get("condition"),
+                    "reviews": result.get("ratingCount"),
                     "delivery": result.get("delivery"),
-                    "offers": result.get("offers"),
-                    "product_id": result.get("product_id") or result.get("prds"),
-                    "product_link": result.get("product_link"),
-                    "thumbnail": result.get("thumbnail")
+                    "link": result.get("link"),
+                    "image": result.get("imageUrl"),
                 })
             
             # Mark as called in shared state (rate limiting)

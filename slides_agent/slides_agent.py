@@ -52,7 +52,7 @@ def _build_instructions() -> str:
 
 def create_slides_agent() -> Agent:
     return Agent(
-        name="Slides Agent",
+        name="Deck Studio",
         description="PowerPoint presentation specialist for creating, editing, and analyzing .pptx files",
         instructions=_build_instructions(),
         # files_folder=os.path.join(current_dir, "files"),

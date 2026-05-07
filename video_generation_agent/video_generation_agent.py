@@ -8,8 +8,8 @@ from config import get_default_model, is_openai_provider
 
 def create_video_generation_agent() -> Agent:
     return Agent(
-        name="Video Agent",
-        description="A general-purpose agent for video generation and editing.",
+        name="Media Studio",
+        description="A general-purpose department for video generation and editing.",
         instructions="instructions.md",
         tools_folder="./tools",
         tools=[LoadFileAttachment, CopyFile],

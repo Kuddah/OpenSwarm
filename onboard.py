@@ -75,10 +75,10 @@ ADD_ONS = [
     {
         "id":          "search",
         "name":        "Web Search",
-        "description": "Web, Scholar & product search for all agents",
+        "description": "Scholar & product search (2,500 free/month)",
         "keys": [
-            {"env": "SEARCH_API_KEY", "label": "SearchAPI key",
-             "url": "https://www.searchapi.io"},
+            {"env": "SERPER_API_KEY", "label": "Serper.dev API key",
+             "url": "https://serper.dev"},
         ],
         "exclude_for": [],
     },

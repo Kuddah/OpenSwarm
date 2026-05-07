@@ -16,8 +16,8 @@ instructions_path = os.path.join(current_dir, "instructions.md")
 
 def create_data_analyst() -> Agent:
     return Agent(
-        name="Data Analyst",
-        description="Advanced data analytics agent that generates charts and provides actionable insights.",
+        name="Analytics",
+        description="Advanced data analytics that generates charts and provides actionable insights.",
         instructions=instructions_path,
         tools_folder=os.path.join(current_dir, "tools"),
         model=get_default_model(),

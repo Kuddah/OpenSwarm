@@ -160,7 +160,7 @@ def _bootstrap() -> None:
 _OPTIONAL_INTEGRATIONS = [
     ("Composio (10,000+ external integrations)", ["COMPOSIO_API_KEY", "COMPOSIO_USER_ID"]),
     ("Anthropic / Claude models", ["ANTHROPIC_API_KEY"]),
-    ("Search", ["SEARCH_API_KEY"]),
+    ("Search", ["SERPER_API_KEY"]),
     ("Fal.ai (video & audio generation)", ["FAL_KEY"]),
     ("Google AI / Gemini", ["GOOGLE_API_KEY"]),
     ("Pexels (stock images)", ["PEXELS_API_KEY"]),

@@ -55,30 +55,28 @@ class ScholarSearch(BaseTool):
             if self.context and self.context.get("scholar_search_called", False):
                 return "Error: ScholarSearch can only be called once per user request to save API costs. Use the results from the previous search or web search tool."
             
-            api_key = os.getenv("SEARCH_API_KEY")
+            api_key = os.getenv("SERPER_API_KEY")
             if not api_key:
-                raise ValueError("SEARCH_API_KEY is not set. Add it to your .env to use ScholarSearch.")
+                raise ValueError("SERPER_API_KEY is not set. Add it to your .env to use ScholarSearch.")
             
-            # Build request parameters
-            params = {
-                "engine": "google_scholar",
-                "api_key": api_key,
+            # Build request body (Serper uses POST + JSON)
+            payload: dict = {
                 "q": self.query,
                 "num": self.num_results,
-                "page": self.page
+                "page": self.page,
             }
             
-            # Add year filters
-            if self.year_from:
-                params["as_ylo"] = self.year_from
-            
-            if self.year_to:
-                params["as_yhi"] = self.year_to
+            # Year range via Google's tbs parameter
+            if self.year_from or self.year_to:
+                year_min = self.year_from or 1900
+                year_max = self.year_to or 2100
+                payload["tbs"] = f"cdr:1,cd_min:01/01/{year_min},cd_max:12/31/{year_max}"
             
             # Make API request
-            response = requests.get(
-                "https://www.searchapi.io/api/v1/search",
-                params=params,
+            response = requests.post(
+                "https://google.serper.dev/scholar",
+                headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+                json=payload,
                 timeout=30
             )
             
@@ -91,64 +89,35 @@ class ScholarSearch(BaseTool):
             if "error" in data:
                 return f"Error from API: {data['error']}"
             
-            # Extract results
-            organic_results = data.get("organic_results", [])
-            profiles = data.get("profiles", [])
-            search_info = data.get("search_information", {})
+            # Extract results — Serper returns 'organic' list
+            organic_results = data.get("organic", [])
+            search_info = data.get("searchParameters", {})
             
             # Format articles
             articles = []
             for result in organic_results:
-                # Extract authors
-                authors = []
-                for author in result.get("authors", []):
-                    authors.append(author.get("name", "Unknown"))
-                
-                # Extract citation info
-                inline_links = result.get("inline_links", {})
-                cited_by = inline_links.get("cited_by", {})
-                versions = inline_links.get("versions", {})
-                
-                # Extract resource (PDF, etc.)
-                resource = result.get("resource", {})
+                # Authors come as a plain string in Serper
+                raw_authors = result.get("authors", "")
+                authors = [a.strip() for a in raw_authors.split(",")] if raw_authors else []
                 
                 article = {
                     "title": result.get("title"),
                     "link": result.get("link"),
                     "publication": result.get("publication"),
                     "snippet": result.get("snippet"),
+                    "year": result.get("year"),
                     "authors": authors,
-                    "citations": cited_by.get("total"),
-                    "cites_id": cited_by.get("cites_id"),
-                    "versions_count": versions.get("total"),
-                    "cluster_id": versions.get("cluster_id")
+                    "citations": result.get("cited_by"),
                 }
                 
-                # Add resource link (PDF, etc.) - important for reading full papers
-                if resource:
-                    article["resource"] = {
-                        "name": resource.get("name"),
-                        "format": resource.get("format"),
-                        "link": resource.get("link")
-                    }
-                
-                # Add related links
-                if inline_links.get("related_articles_link"):
-                    article["related_articles_link"] = inline_links.get("related_articles_link")
+                # PDF link if available
+                if result.get("pdf"):
+                    article["resource"] = {"format": "PDF", "link": result["pdf"]}
                 
                 articles.append(article)
             
-            # Format author profiles if any
+            # Serper scholar does not return author profile cards
             author_profiles = []
-            for profile in profiles:
-                author_profiles.append({
-                    "name": profile.get("name"),
-                    "affiliations": profile.get("affiliations"),
-                    "email_domain": profile.get("email"),
-                    "total_citations": profile.get("cited_by", {}).get("total"),
-                    "profile_link": profile.get("link"),
-                    "author_id": profile.get("author_id")
-                })
             
             # Mark as called in shared state (rate limiting)
             if self.context:
@@ -160,7 +129,7 @@ class ScholarSearch(BaseTool):
                     "year_from": self.year_from,
                     "year_to": self.year_to
                 },
-                "total_results": search_info.get("total_results"),
+                "total_results": data.get("credits"),
                 "page": self.page,
                 "articles_count": len(articles),
                 "articles": articles

@@ -48,3 +48,6 @@ moviepy<2
 fal-client
 httpx
 imageio-ffmpeg
+
+# Discord bot interface
+discord.py>=2.3.0

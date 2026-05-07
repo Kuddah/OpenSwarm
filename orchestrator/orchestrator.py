@@ -9,7 +9,7 @@ load_dotenv()
 
 def create_orchestrator() -> Agent:
     return Agent(
-        name="Orchestrator",
+        name="Director",
         description=(
             "Primary coordinator that plans multi-agent workflows, runs independent workstreams in parallel, "
             "and hands off to a specialist when tight user iteration is needed."

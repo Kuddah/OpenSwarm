@@ -27,7 +27,7 @@ Built on [Agency Swarm](https://github.com/VRSEN/agency-swarm) — the framework
 
 ## 💡 What Makes This Different?
 
-Instead of one agent trying to do everything poorly, you get **specialists coordinated by an orchestrator**.
+Instead of one agent trying to do everything poorly, you get **specialists coordinated by a director**.
 
 ### 🎯 Real Examples
 
@@ -47,14 +47,14 @@ Connect to 10,000+ external services (Gmail, Slack, GitHub, HubSpot) via Composi
 
 | Agent                      | What it does                                                                                                                                                                                 |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Orchestrator**           | Routes every user request to the right specialist(s). Never answers directly — pure coordination.                                                                                            |
-| **Virtual Assistant**      | Handles everyday tasks: writing, scheduling, messaging, task management. Gains 10,000+ external integrations via [Composio](https://composio.dev) (Gmail, Slack, GitHub, HubSpot, and more). |
-| **Deep Research**          | Conducts comprehensive, evidence-based web research with citations and balanced analysis.                                                                                                    |
-| **Data Analyst**           | Analyses structured data, builds charts, runs statistical models — all inside an isolated IPython kernel.                                                                                    |
-| **Slides Agent**           | Generates complete, visually polished HTML slide decks, then exports them to PPTX.                                                                                                           |
-| **Docs Agent**             | Creates formatted Word documents and PDFs from outlines or raw content.                                                                                                                      |
-| **Image Generation Agent** | Generates and edits images using Gemini 2.5 Flash Image / Gemini 3 Pro Image and fal.ai.                                                                                                     |
-| **Video Generation Agent** | Produces videos via Sora (OpenAI), Veo (Google), and Seedance (fal.ai); also edits and combines clips.                                                                                       |
+| **Director**              | Routes every user request to the right department. Never answers directly — pure coordination.                                                                                               |
+| **Operations**            | Handles everyday tasks: writing, scheduling, messaging, task management. Gains 10,000+ external integrations via [Composio](https://composio.dev) (Gmail, Slack, GitHub, HubSpot, and more). |
+| **Intelligence**          | Conducts comprehensive, evidence-based web research with citations and balanced analysis.                                                                                                    |
+| **Analytics**             | Analyses structured data, builds charts, runs statistical models — all inside an isolated IPython kernel.                                                                                    |
+| **Deck Studio**           | Generates complete, visually polished HTML slide decks, then exports them to PPTX.                                                                                                           |
+| **Editorial**             | Creates formatted Word documents and PDFs from outlines or raw content.                                                                                                                      |
+| **Creative Studio**       | Generates and edits images using Gemini 2.5 Flash Image / Gemini 3 Pro Image and fal.ai.                                                                                                     |
+| **Media Studio**          | Produces videos via Sora (OpenAI), Veo (Google), and Seedance (fal.ai); also edits and combines clips.                                                                                       |
 
 ---
 

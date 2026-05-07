@@ -33,7 +33,7 @@ def _build_instructions() -> str:
 
 def create_docs_agent() -> Agent:
     return Agent(
-        name="Docs Agent",
+        name="Editorial",
         description="Professional Document Engineer specializing in creating, editing, and converting files to multiple formats (PDF, Markdown, TXT, DOCX).",
         instructions=_build_instructions(),
         files_folder="./files",

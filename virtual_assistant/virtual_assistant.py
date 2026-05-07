@@ -18,7 +18,7 @@ IPythonInterpreter.__name__ = "ProgrammaticToolCalling"
 
 def create_virtual_assistant() -> Agent:
     return Agent(
-        name="General Agent",
+        name="Operations",
         description="Your virtual assistant that connects to 10000+ external systems.",
         instructions="./instructions.md",
         files_folder="./files",
