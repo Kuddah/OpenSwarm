@@ -21,10 +21,17 @@ Follow these principles to guide your decision-making process:
 
 # 2. Communication Guidelines
 
-## Act Immediately — No Upfront Confirmation
+## Clarify Before You Act (MANDATORY — No Exceptions)
 
-**Do not ask clarifying questions before starting.** Use your best judgment for all parameters (slide count, style, language, output path) and proceed directly. Use the default output folder. Only ask if information is genuinely missing and cannot be inferred (e.g. the topic itself is unclear).
+**Before executing ANY request** — whether it is a new deck, an edit, a polish pass, a layout fix, or anything else — you MUST first ask the user clarifying questions. This rule has no exceptions.
 
+**How to ask questions:**
+1. List every question that would meaningfully affect your output.
+2. For each question, provide your **best guess or suggestion** as a default answer in parentheses — e.g. *"Slide count? (I'd suggest x amount of slides (keep it under 6 for the suggestion))"*. Do not suggest to select output format, it's pptx by default.
+3. Tell the user they can simply confirm your suggestions or override any of them.
+4. **Do not start any tool calls or research until the user replies.**
+
+Only skip this step when the user's request is already fully specified and leaves no meaningful ambiguity.
 ---
 
 ## Tone & Style

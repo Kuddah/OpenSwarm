@@ -81,6 +81,59 @@ _FILE_RE = re.compile(
 _DISCORD_FILE_LIMIT = 25 * 1024 * 1024  # 25 MB per file (free server limit)
 
 
+# ── Live progress reporting ───────────────────────────────────────────────────
+
+# Pattern: Agent 'X' starting run.
+_RE_AGENT_START = re.compile(r"Agent '(.+?)' starting run\.")
+# Pattern: Agent 'X' invoking tool 'send_message'. Recipient: 'Y', Message: "..."
+_RE_AGENT_SEND = re.compile(r"Agent '(.+?)' invoking tool 'send_message'\. Recipient: '(.+?)'")
+
+# Human-readable status per agent (shown while that agent is running)
+_AGENT_STATUS: dict[str, str] = {
+    "Director":        "🎯 Director is routing your request…",
+    "Intelligence":    "🔍 Intelligence is researching…",
+    "Analytics":       "📊 Analytics is analysing data…",
+    "Deck Studio":     "🖼️ Deck Studio is building your presentation…",
+    "Editorial":       "📝 Editorial is writing your document…",
+    "Creative Studio": "🎨 Creative Studio is generating images…",
+    "Media Studio":    "🎬 Media Studio is generating video…",
+    "Operations":      "⚙️ Operations is handling your request…",
+}
+
+
+class _DiscordProgressHandler(logging.Handler):
+    """Bridges agency_swarm log records → asyncio queue for Discord status edits."""
+
+    def __init__(self, loop: asyncio.AbstractEventLoop, q: "asyncio.Queue[str]") -> None:
+        super().__init__(level=logging.INFO)
+        self._loop = loop
+        self._q = q
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if not record.name.startswith("agency_swarm"):
+            return
+        status = self._translate(record.getMessage())
+        if status:
+            try:
+                self._loop.call_soon_threadsafe(self._q.put_nowait, status)
+            except Exception:
+                pass
+
+    def _translate(self, msg: str) -> str | None:
+        # Director routing to a specialist → show destination
+        m = _RE_AGENT_SEND.search(msg)
+        if m:
+            recipient = m.group(2)
+            label = _AGENT_STATUS.get(recipient, f"➡️ Routing to **{recipient}**…")
+            return f"➡️ Routing to **{recipient}**…" if recipient not in _AGENT_STATUS else label
+        # Specialist starting work
+        m = _RE_AGENT_START.search(msg)
+        if m:
+            agent = m.group(1)
+            return _AGENT_STATUS.get(agent)
+        return None
+
+
 def _find_files_in_response(text: str) -> list[Path]:
     """Return a deduplicated list of existing file paths mentioned in the response."""
     found: list[Path] = []
@@ -226,8 +279,45 @@ async def _process_and_reply(
     user_message: str,
 ) -> None:
     """Run the agency call and send text + file results to `channel`."""
-    async with channel.typing():
-        try:
+    # Immediately acknowledge so users know the bot is alive and processing.
+    ack_msg = await channel.send("⏳ Working on it…")
+
+    # Wire up live progress: log records → queue → edit ack_msg in real time.
+    loop = asyncio.get_running_loop()
+    progress_q: asyncio.Queue[str] = asyncio.Queue()
+    progress_handler = _DiscordProgressHandler(loop, progress_q)
+    logging.getLogger("agency_swarm").addHandler(progress_handler)
+
+    async def _drain_progress() -> None:
+        """Edit the ack message whenever a new status arrives (max 1 edit/sec).
+        If nothing happens for 30 s, append a dot so the user knows we're alive."""
+        last_edit_at = 0.0
+        last_status = "⏳ Working on it…"
+        dot_count = 0
+        while True:
+            try:
+                status = await asyncio.wait_for(progress_q.get(), timeout=30.0)
+                dot_count = 0
+            except asyncio.TimeoutError:
+                # No new event in 30 s — show a heartbeat dot on the current status
+                dot_count += 1
+                status = last_status.rstrip("…").rstrip(".") + " " + "·" * dot_count
+            elapsed = loop.time() - last_edit_at
+            if elapsed < 1.2:
+                await asyncio.sleep(1.2 - elapsed)
+            try:
+                await ack_msg.edit(content=status)
+                last_edit_at = loop.time()
+                if not status.endswith("·" * dot_count):
+                    last_status = status
+            except discord.HTTPException:
+                pass
+
+    drain_task = asyncio.create_task(_drain_progress())
+
+    response_text = "Something went wrong while processing your request. Please try again."
+    try:
+        async with channel.typing():
             ctx = _get_or_create_context(context_key)
             result = await asyncio.to_thread(
                 agency.get_response_sync,
@@ -235,9 +325,21 @@ async def _process_and_reply(
                 agency_context_override=ctx,
             )
             response_text = str(result.final_output).strip() if result.final_output else "_(no response)_"
-        except Exception:
-            logger.exception("Error processing message from user %s", user_id)
-            response_text = "Something went wrong while processing your request. Please try again."
+    except Exception:
+        logger.exception("Error processing message from user %s", user_id)
+    finally:
+        logging.getLogger("agency_swarm").removeHandler(progress_handler)
+        drain_task.cancel()
+        try:
+            await drain_task
+        except asyncio.CancelledError:
+            pass
+
+    # Remove the ack/status placeholder so it doesn't clutter the thread.
+    try:
+        await ack_msg.delete()
+    except discord.HTTPException:
+        pass
 
     # Send text response
     for chunk in _split_message(response_text):
