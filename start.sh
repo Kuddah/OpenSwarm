@@ -22,7 +22,14 @@ apt-get install -y -qq python3 python3-venv python3-pip \
     libglib2.0-0 libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
     libcups2 libdrm2 libdbus-1-3 libxkbcommon0 libx11-6 libxcomposite1 \
     libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
-    libcairo2 libasound2
+    libcairo2
+
+# libasound2 was renamed to libasound2t64 in Ubuntu 24.04+
+if apt-cache show libasound2t64 &>/dev/null 2>&1; then
+    apt-get install -y -qq libasound2t64
+elif apt-cache show libasound2 &>/dev/null 2>&1; then
+    apt-get install -y -qq libasound2
+fi
 
 echo "==> Python version: $(python3 --version)"
 
